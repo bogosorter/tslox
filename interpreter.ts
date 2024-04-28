@@ -1,11 +1,14 @@
-import { Expression, Binary, Grouping, Literal, Unary } from './expressions';
+import Environment from './environment';
+import { Expression, Binary, Grouping, Literal, Unary, VariableExpression, Assignement } from './expressions';
 import Token from './token';
 import { ExpressionVisitor, StatementVisitor } from './visitor';
 import RuntimeError from './runtimeError';
 import { Variable, TokenType } from './types';
-import { Statement, ExpressionStatement, PrintStatement } from './statements';
+import { Statement, ExpressionStatement, PrintStatement, VariableDeclaration, Block } from './statements';
 
 export default class Interpreter implements ExpressionVisitor<Variable>, StatementVisitor<void> {
+
+    environment: Environment = new Environment();
 
     interpret(statements: Statement[], reportError: (error: RuntimeError) => void) {
         try {
@@ -69,6 +72,35 @@ export default class Interpreter implements ExpressionVisitor<Variable>, Stateme
     visitPrintStatement(statement: PrintStatement): void {
         const value = this.evaluate(statement.expression);
         console.log(this.stringify(value));
+    }
+
+    visitVariableDeclaration(statement: VariableDeclaration): void {
+        const value = this.evaluate(statement.initializer);
+        this.environment.define(statement.name, value);
+    }
+
+    visitVariableExpression(expression: VariableExpression): Variable {
+        return this.environment.get(expression.name);
+    }
+
+    visitAssignementExpression(expression: Assignement): Variable {
+        const value = this.evaluate(expression.value);
+        this.environment.assign(expression.name, value);
+        return value;
+    }
+
+    visitBlockStatement(statement: Block): void {
+        this.executeBlock(statement.statements, new Environment(this.environment));
+    }
+
+    executeBlock(statements: Statement[], environment: Environment) {
+        const previous = this.environment;
+        try {
+            this.environment = environment;
+            for (const statement of statements) this.execute(statement);
+        } finally {
+            this.environment = previous;
+        }
     }
 
     evaluate(expression: Expression): Variable {

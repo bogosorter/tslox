@@ -62,3 +62,31 @@ export class Unary extends Expression {
         return visitor.visitUnaryExpression(this);
     }
 }
+
+export class VariableExpression extends Expression {
+    name: Token;
+
+    constructor(name: Token) {
+        super();
+        this.name = name
+    }
+
+    accept<T>(visitor: ExpressionVisitor<T>): T {
+        return visitor.visitVariableExpression(this);
+    }
+}
+
+export class Assignement extends Expression {
+    name: Token;
+    value: Expression;
+
+    constructor(name: Token, value: Expression) {
+        super();
+        this.name = name;
+        this.value = value;
+    }
+
+    accept<T>(visitor: ExpressionVisitor<T>): T {
+        return visitor.visitAssignementExpression(this);
+    }
+}
